@@ -3,7 +3,7 @@ import streamlit as st
 import pandas as pd
 from io import BytesIO
 
-st.title("Tag 50 Reconciliation App")
+st.title("Tag 50 Reconciliation App (Dual-Key Match)")
 
 # Upload files
 sf_file = st.file_uploader("Upload Salesforce Tag 50 File", type=["xlsx"])
@@ -17,14 +17,16 @@ if sf_file and gmi_file:
 
         # Normalize key columns
         salesforce_df["Tag 50 Name"] = salesforce_df["Tag 50 Name"].astype(str).str.strip().str.upper()
+        salesforce_df["Trading Account"] = salesforce_df["Trading Account"].astype(str).str.strip().str.upper()
         gmi_df["TUSER"] = gmi_df["TUSER"].astype(str).str.strip().str.upper()
+        gmi_df["00003"] = gmi_df["00003"].astype(str).str.strip().str.upper()
 
-        # Merge for reconciliation
+        # Merge for reconciliation on both keys
         merged = pd.merge(
             salesforce_df,
             gmi_df,
-            left_on="Tag 50 Name",
-            right_on="TUSER",
+            left_on=["Tag 50 Name", "Trading Account"],
+            right_on=["TUSER", "00003"],
             how="outer",
             indicator=True
         )
@@ -35,7 +37,7 @@ if sf_file and gmi_file:
         only_in_gmi = merged[merged["_merge"] == "right_only"]
 
         # Show results
-        st.subheader("Matched Tag 50s")
+        st.subheader("Matched Tag 50s + Trading Account")
         st.dataframe(matched)
 
         st.subheader("Only in Salesforce")
